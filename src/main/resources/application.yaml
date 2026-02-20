@@ -1,3 +1,5 @@
 spring:
   application:
     name: selective-tests
+  flyway:
+   default-schema: selective

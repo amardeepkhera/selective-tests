@@ -1,0 +1,13 @@
+CREATE SCHEMA IF NOT EXISTS selective;
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE IF NOT EXISTS selective.question (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    text VARCHAR NOT NULL,
+    image JSON,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_by VARCHAR(255)
+);
