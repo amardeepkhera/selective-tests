@@ -1,0 +1,152 @@
+.test-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.question-card {
+    min-width: 0;
+}
+
+.test-side-card {
+    display: grid;
+    gap: 1rem;
+    position: sticky;
+    top: 1.5rem;
+}
+
+.question-meta {
+    flex: 1 1 24rem;
+}
+
+.question-number {
+    margin-bottom: 0.5rem;
+    color: #5f6b7a;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.question-text {
+    font-size: 1.4rem;
+    line-height: 1.4;
+}
+
+.question-form {
+    margin-top: 1.5rem;
+}
+
+.options-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.option-card {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: start;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid #cad5e2;
+    border-radius: 0.9rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.option-card:hover {
+    border-color: #7ba7d9;
+    box-shadow: 0 8px 20px rgba(24, 62, 109, 0.08);
+}
+
+.option-card.selected {
+    border-color: #0d6efd;
+    background: #f4f8ff;
+}
+
+.option-input {
+    margin-top: 0.25rem;
+}
+
+.option-label {
+    min-width: 1.75rem;
+    font-weight: 700;
+    color: #17324d;
+}
+
+.option-text {
+    color: #243447;
+    line-height: 1.45;
+}
+
+.timer-panel {
+    display: inline-flex;
+    flex-direction: column;
+    padding: 0.9rem 1rem;
+    border: 1px solid #cad5e2;
+    border-radius: 0.75rem;
+    background: #f8fbff;
+    width: 100%;
+}
+
+.timer-label {
+    color: #5f6b7a;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.timer-value {
+    margin-top: 0.2rem;
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.question-nav {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #dde5ee;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.nav-previous {
+    justify-self: start;
+}
+
+.nav-submit {
+    justify-self: center;
+}
+
+.nav-next {
+    justify-self: end;
+}
+
+.submit-paper-btn {
+    width: 100%;
+}
+
+@media (max-width: 575.98px) {
+    .test-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .test-side-card {
+        position: static;
+    }
+
+    .question-nav {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-previous,
+    .nav-submit,
+    .nav-next {
+        justify-self: stretch;
+    }
+}

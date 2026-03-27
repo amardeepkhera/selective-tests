@@ -3,3 +3,10 @@ spring:
     name: selective-tests
   flyway:
    default-schema: selective
+   validate-on-migrate: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mydatabase
+    username: myuser
+    password: secret
+    hikari:
+      schema: selective

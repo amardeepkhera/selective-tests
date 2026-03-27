@@ -1,0 +1,41 @@
+:root {
+    --app-bg: #f4f7fb;
+    --app-surface: #ffffff;
+    --app-border: #dbe1ea;
+    --app-text-soft: #5f6b7a;
+}
+
+body {
+    background: linear-gradient(180deg, #f7f9fc 0%, var(--app-bg) 100%);
+    color: #1f2933;
+}
+
+.page-wrap {
+    max-width: 1140px;
+}
+
+.surface-card {
+    background: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-radius: 0.9rem;
+    box-shadow: 0 8px 24px rgba(12, 33, 62, 0.06);
+}
+
+.page-title {
+    letter-spacing: 0.01em;
+    font-weight: 700;
+}
+
+.empty-state {
+    color: var(--app-text-soft);
+}
+
+.data-table th,
+.data-table td {
+    vertical-align: top;
+}
+
+.code-wrap {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
