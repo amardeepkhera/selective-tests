@@ -6,10 +6,10 @@ import com.au.swarin.selective_tests.repository.Question
 import com.au.swarin.selective_tests.repository.QuestionRepository
 import com.au.swarin.selective_tests.repository.TagRepository
 import com.au.swarin.selective_tests.web.model.QuestionListItem
+import com.au.swarin.selective_tests.web.model.QuestionSearchPage
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
@@ -36,6 +36,36 @@ class QuestionService(
                 createdAt = question.createdAt,
             )
         }
+    }
+
+    fun getQuestions(tags: Set<UUID>, page: Int, size: Int): QuestionSearchPage {
+        require(page >= 0) { "Page index must be zero or greater." }
+        require(size > 0) { "Page size must be greater than zero." }
+
+        val safeSize = size.coerceAtMost(100)
+        val offset = page.toLong() * safeSize
+        val questions = questionRepository.findAllByAnyTagIdIn(
+            tagIds = tags,
+            limit = safeSize + 1,
+            offset = offset,
+        )
+
+        val hasMore = questions.size > safeSize
+        val visibleQuestions = questions
+            .take(safeSize)
+            .map { question ->
+                QuestionListItem(
+                    id = question.id,
+                    text = question.text,
+                )
+            }
+
+        return QuestionSearchPage(
+            questions = visibleQuestions,
+            page = page,
+            size = safeSize,
+            hasMore = hasMore,
+        )
     }
 
     fun getQuestion(id: UUID): Question = questionRepository.findById(id).orElseThrow()

@@ -1,17 +1,14 @@
-CREATE TABLE IF NOT EXISTS selective.tag
-(
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    entity     VARCHAR(50) NOT NULL CHECK (entity IN ('question')),
-    key        VARCHAR(50) NOT NULL,
-    value      VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_tag_entity_key_value UNIQUE (entity, key, value)
-);
+ALTER TABLE selective.tag
+    DROP CONSTRAINT IF EXISTS tag_entity_check;
 
-ALTER TABLE selective.question
+ALTER TABLE selective.tag
+    ADD CONSTRAINT tag_entity_check
+        CHECK (entity IN ('question', 'question_paper'));
+
+ALTER TABLE selective.question_paper
     ADD COLUMN IF NOT EXISTS tags JSONB;
 
-CREATE OR REPLACE FUNCTION selective.question_tags_are_valid(tags_json JSONB)
+CREATE OR REPLACE FUNCTION selective.question_paper_tags_are_valid(tags_json JSONB)
     RETURNS BOOLEAN
     LANGUAGE plpgsql
 AS
@@ -38,7 +35,7 @@ BEGIN
                 SELECT 1
                 FROM selective.tag tag
                 WHERE tag.id = tag_text::UUID
-                  AND tag.entity = 'question'
+                  AND tag.entity = 'question_paper'
             ) THEN
                 RETURN FALSE;
             END IF;
@@ -48,6 +45,6 @@ BEGIN
 END;
 $$;
 
-ALTER TABLE selective.question
-    ADD CONSTRAINT chk_question_tags_valid
-        CHECK (selective.question_tags_are_valid(tags));
+ALTER TABLE selective.question_paper
+    ADD CONSTRAINT chk_question_paper_tags_valid
+        CHECK (selective.question_paper_tags_are_valid(tags));

@@ -27,18 +27,21 @@ data class Question(
 @Table("question_paper")
 data class QuestionPaper(
     @Id
-    val id: UUID,
+    val id: UUID? = null,
     val paper: Paper,
+    val tags: JsonNode? = null,
+    val status: String,
     @Column("created_at")
     val createdAt: LocalDateTime,
 )
 
 data class Paper(
+    val name: String,
     val questions: List<PaperQuestion> = emptyList(),
 )
 
 data class PaperQuestion(
-    val questionNo: Int,
+    val questionNo: Int? = null,
     val questionId: UUID,
 )
 

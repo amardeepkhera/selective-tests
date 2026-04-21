@@ -9,7 +9,7 @@ data class QuestionListItem(
     val id: UUID?,
     val text: String,
     val images: Images? = null,
-    val options: Options,
-    val answer: String,
-    val createdAt: LocalDateTime,
+    val options: Options? = null,
+    val answer: String? = null,
+    val createdAt: LocalDateTime? = null,
 )

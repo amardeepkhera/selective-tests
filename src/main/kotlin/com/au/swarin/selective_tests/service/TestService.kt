@@ -22,7 +22,7 @@ class TestService(
         TestSummary(
             testId = test.id,
             durationMins = test.durationMins,
-            questionMap = questionPaper.paper.questions.associateBy { it.questionNo },
+            questionMap = questionPaper.paper.questions.associateBy { it.questionNo!! },
         )
     }
 

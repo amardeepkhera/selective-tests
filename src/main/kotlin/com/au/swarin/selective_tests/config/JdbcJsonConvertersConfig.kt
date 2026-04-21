@@ -48,7 +48,7 @@ class JsonNodeToPgObjectConverter(
 ) : Converter<JsonNode, PGobject> {
     override fun convert(source: JsonNode): PGobject =
         PGobject().apply {
-            type = "json"
+            type = "jsonb"
             value = objectMapper.writeValueAsString(source)
         }
 }
@@ -66,7 +66,7 @@ class PaperToPgObjectConverter(
 ) : Converter<Paper, PGobject> {
     override fun convert(source: Paper): PGobject =
         PGobject().apply {
-            type = "json"
+            type = "jsonb"
             value = objectMapper.writeValueAsString(source)
         }
 }
@@ -103,6 +103,6 @@ private inline fun <reified T> fromJson(source: PGobject, objectMapper: ObjectMa
     objectMapper.readValue(source.value ?: "{}")
 
 private fun PGobject.toJson(source: Any, objectMapper: ObjectMapper) = apply {
-    type = "json"
+    type = "jsonb"
     value = objectMapper.writeValueAsString(source)
 }

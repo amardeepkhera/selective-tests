@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS selective.question_paper
 (
     id         UUID PRIMARY KEY   DEFAULT gen_random_uuid(),
-    paper      JSON      NOT NULL,
+    paper      JSONB     NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
