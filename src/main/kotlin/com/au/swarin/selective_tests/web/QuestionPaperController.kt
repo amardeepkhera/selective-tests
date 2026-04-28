@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.SessionAttribute
-import org.springframework.web.bind.support.SessionStatus
 import org.springframework.web.servlet.View
 import org.springframework.web.servlet.mvc.support.RedirectAttributes
 import java.util.UUID
@@ -90,6 +89,7 @@ class QuestionPaperController(
         @RequestParam paperName: String,
         @RequestParam(required = false) selectedQuestionIds: Set<UUID>?,
         @SessionAttribute(QUESTION_PAPER_FORM_SESSION) questionPaperFormState: QuestionPaperFormState,
+        request: HttpServletRequest,
         model: Model,
     ): String {
         val createQuestionPaperRequest =
@@ -97,6 +97,7 @@ class QuestionPaperController(
         val questionPaperId = questionPaperService.saveAsDraft(createQuestionPaperRequest).id
 
         updateQuestionPaperFormState(questionPaperFormState, paperName, selectedQuestionIds, questionPaperId)
+        request.session.setAttribute(QUESTION_PAPER_FORM_SESSION, questionPaperFormState)
         return renderQuestionPaperNextForm(model, questionPaperFormState)
     }
 
@@ -104,9 +105,11 @@ class QuestionPaperController(
     fun reviewQuestionPaper(
         @RequestParam tagsJson: String,
         @SessionAttribute(QUESTION_PAPER_FORM_SESSION) questionPaperFormState: QuestionPaperFormState,
+        request: HttpServletRequest,
         model: Model,
     ): String {
         updateQuestionPaperTags(questionPaperFormState, tagsJson)
+        request.session.setAttribute(QUESTION_PAPER_FORM_SESSION, questionPaperFormState)
         return renderQuestionPaperReview(model, questionPaperFormState)
     }
 
@@ -114,7 +117,7 @@ class QuestionPaperController(
     fun submitQuestionPaper(
         @SessionAttribute(QUESTION_PAPER_FORM_SESSION) questionPaperFormState: QuestionPaperFormState,
         redirectAttributes: RedirectAttributes,
-        sessionStatus: SessionStatus
+        request: HttpServletRequest,
     ): String {
         val questionPaperId = requireNotNull(questionPaperFormState.questionPaperId) {
             "Question paper draft is missing."
@@ -125,7 +128,7 @@ class QuestionPaperController(
             "successMessage",
             "Question paper ${questionPaperFormState.paperName} submitted.",
         )
-        sessionStatus.setComplete()
+        request.session.removeAttribute(QUESTION_PAPER_FORM_SESSION)
 
         return "redirect:/question-papers/$questionPaperId"
     }

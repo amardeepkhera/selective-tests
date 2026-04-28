@@ -10,3 +10,7 @@ spring:
     password: secret
     hikari:
       schema: selective
+  session:
+    jdbc:
+      initialize-schema: never
+      table-name: selective.spring_session

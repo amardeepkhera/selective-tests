@@ -1,5 +1,6 @@
 package com.au.swarin.selective_tests.web.model
 
+import java.io.Serializable
 import java.util.UUID
 
 data class QuestionPaperFormState(
@@ -7,4 +8,4 @@ data class QuestionPaperFormState(
     var tagsJson: String = "",
     val selectedQuestionIds: MutableSet<UUID> = mutableSetOf(),
     var questionPaperId: UUID? = null,
-)
+): Serializable
