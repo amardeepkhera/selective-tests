@@ -27,6 +27,13 @@
     border: 1px solid #dbe3ec;
 }
 
+.question-paper-review-results-panel {
+    display: block;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
 .editorjs-shell {
     border: 1px solid var(--app-border);
     border-radius: 0.75rem;
@@ -108,6 +115,11 @@
     padding: 0.25rem 0;
 }
 
+.question-selection-summary {
+    color: #4b5b6b;
+    font-weight: 600;
+}
+
 .question-search-status {
     padding: 0.85rem 1rem;
     color: var(--bs-secondary-color);
@@ -131,6 +143,17 @@
     padding: 1rem 0.75rem;
     text-align: center;
     vertical-align: middle;
+}
+
+.question-paper-results-table thead th.question-number-column {
+    width: 7rem;
+    min-width: 7rem;
+    text-align: center;
+}
+
+.question-paper-results-table thead th.question-tags-column {
+    width: 18rem;
+    min-width: 14rem;
 }
 
 .question-paper-name-input {
@@ -167,9 +190,26 @@
     vertical-align: middle;
 }
 
+.question-number-cell {
+    width: 7rem;
+    min-width: 7rem;
+    padding: 1.35rem 1rem !important;
+    text-align: center;
+    vertical-align: middle !important;
+    font-weight: 600;
+    color: #4b5b6b;
+}
+
 .question-result-cell {
     min-width: 24rem;
     padding: 1.35rem 1.5rem;
+}
+
+.question-paper-results-table tbody td.question-tags-cell {
+    width: 18rem;
+    min-width: 14rem;
+    padding: 1.35rem 1.25rem;
+    vertical-align: middle;
 }
 
 .question-result-layout {
@@ -209,6 +249,11 @@
     margin-bottom: 0;
 }
 
+.question-tags-list {
+    align-items: flex-start;
+    align-content: flex-start;
+}
+
 @media (max-width: 767.98px) {
     .page-header {
         align-items: flex-start;
@@ -227,6 +272,10 @@
 
     .question-paper-actions .btn {
         width: 100%;
+    }
+
+    .question-selection-summary {
+        text-align: center;
     }
 
     .form-actions {

@@ -13,8 +13,9 @@
     const questionSelectAllCheckbox = document.getElementById("questionSelectAllCheckbox");
     const questionSearchLoading = document.getElementById("questionSearchLoading");
     const questionSearchEnd = document.getElementById("questionSearchEnd");
+    const selectedQuestionCount = document.getElementById("selectedQuestionCount");
 
-    if (!editorContainer || !tagAutocomplete || !tagSearchInput || !selectedTagsContainer || !tagSuggestions || !tagsJsonField || !searchQuestionsButton || !questionSearchMessage || !questionPaperWorkflow || !questionSearchResults || !questionSearchResultsBody || !questionSelectAllCheckbox || !questionSearchLoading || !questionSearchEnd) {
+    if (!editorContainer || !tagAutocomplete || !tagSearchInput || !selectedTagsContainer || !tagSuggestions || !tagsJsonField || !searchQuestionsButton || !questionSearchMessage || !questionPaperWorkflow || !questionSearchResults || !questionSearchResultsBody || !questionSelectAllCheckbox || !questionSearchLoading || !questionSearchEnd || !selectedQuestionCount) {
         return;
     }
 
@@ -78,6 +79,7 @@
         questionSelectAllCheckbox.indeterminate = false;
         questionSearchLoading.classList.add("d-none");
         questionSearchEnd.classList.add("d-none");
+        updateSelectedQuestionCount();
     };
 
     const resetQuestionSearchState = () => {
@@ -88,17 +90,24 @@
         questionSearchState.requestToken += 1;
     };
 
+    const updateSelectedQuestionCount = () => {
+        const checkedCount = questionSearchResultsBody.querySelectorAll(".question-row-checkbox:checked").length;
+        selectedQuestionCount.textContent = `${checkedCount} question${checkedCount === 1 ? "" : "s"} selected`;
+    };
+
     const updateSelectAllCheckboxState = () => {
         const rowCheckboxes = Array.from(questionSearchResultsBody.querySelectorAll(".question-row-checkbox"));
         if (rowCheckboxes.length === 0) {
             questionSelectAllCheckbox.checked = false;
             questionSelectAllCheckbox.indeterminate = false;
+            updateSelectedQuestionCount();
             return;
         }
 
         const checkedCount = rowCheckboxes.filter((checkbox) => checkbox.checked).length;
         questionSelectAllCheckbox.checked = checkedCount === rowCheckboxes.length;
         questionSelectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < rowCheckboxes.length;
+        updateSelectedQuestionCount();
     };
 
     const buildTagToken = (tag) => `${normalizeTagPart(tag.key)}::${normalizeTagPart(tag.value)}`;
@@ -237,9 +246,35 @@
 
         content.appendChild(fullText);
         layout.append(content);
+
+        const tagsCell = document.createElement("td");
+        tagsCell.className = "question-tags-cell";
+
+        const tagsContainer = document.createElement("div");
+        tagsContainer.className = "question-tags-list d-flex flex-wrap gap-2";
+        const tags = Array.isArray(question.tags)
+            ? [...question.tags].sort((left, right) => `${left.key ?? ""}:${left.value ?? ""}`.localeCompare(`${right.key ?? ""}:${right.value ?? ""}`))
+            : [];
+
+        if (tags.length > 0) {
+            tags.forEach((tag) => {
+                const badge = document.createElement("span");
+                badge.className = "badge text-bg-secondary";
+                badge.textContent = `${tag.key ?? ""}: ${tag.value ?? ""}`;
+                tagsContainer.appendChild(badge);
+            });
+        } else {
+            const emptyState = document.createElement("span");
+            emptyState.className = "text-body-secondary";
+            emptyState.textContent = "No tags";
+            tagsContainer.appendChild(emptyState);
+        }
+
         row.appendChild(checkboxCell);
         textCell.appendChild(layout);
         row.appendChild(textCell);
+        tagsCell.appendChild(tagsContainer);
+        row.appendChild(tagsCell);
 
         return row;
     };
@@ -395,6 +430,7 @@
             checkbox.checked = questionSelectAllCheckbox.checked;
         });
         questionSelectAllCheckbox.indeterminate = false;
+        updateSelectedQuestionCount();
     });
     questionSearchResults.addEventListener("scroll", () => {
         const isScrollable = questionSearchResults.scrollHeight > questionSearchResults.clientHeight;
@@ -404,4 +440,5 @@
     });
 
     initializeTags();
+    updateSelectedQuestionCount();
 })();

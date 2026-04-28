@@ -26,4 +26,14 @@ interface QuestionRepository : ListCrudRepository<Question, UUID> {
         @Param("limit") limit: Int,
         @Param("offset") offset: Long,
     ): List<Question>
+
+    @Query(
+        """
+        SELECT DISTINCT tag_id::uuid
+        FROM selective.question q
+        CROSS JOIN LATERAL jsonb_array_elements_text(q.tags) AS tag_id
+        WHERE q.id IN (:questionIds)
+        """
+    )
+    fun getTags(@Param("questionIds") questionIds: Set<UUID>): Set<UUID>
 }

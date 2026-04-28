@@ -14,13 +14,25 @@
     <section class="surface-card p-3 p-md-4">
         <div class="page-header mb-4">
             <div>
-                <h1 class="h3 page-title mb-1">Add Question Paper</h1>
+                <h1 class="h3 page-title mb-1">Create Question Paper</h1>
             </div>
             <a class="btn btn-outline-secondary" th:href="@{/question-papers}">Back to Question Papers</a>
         </div>
 
         <div class="alert alert-danger mb-3" th:if="${errorMessage}" th:text="${errorMessage}"></div>
         <div class="alert alert-success mb-3" th:if="${successMessage}" th:text="${successMessage}"></div>
+
+        <div class="question-form-layout mb-4">
+            <label for="questionPaperName" class="form-label">Question Paper Name</label>
+            <input id="questionPaperName"
+                   name="paperName"
+                   form="questionPaperWorkflow"
+                   class="form-control question-paper-name-input"
+                   type="text"
+                   placeholder="Enter paper name"
+                   th:value="${questionPaperForm.paperName}"
+                   aria-label="Enter paper name">
+        </div>
 
         <section class="question-paper-search-panel">
             <div id="questionPaperEditor" class="question-form-layout">
@@ -54,7 +66,8 @@
               method="post"
               aria-label="Question paper actions">
             <div class="question-paper-actions">
-                <button id="saveQuestionPaperButton" type="submit" class="btn btn-outline-secondary">Save</button>
+                <button id="saveQuestionPaperButton" type="submit" class="btn btn-outline-secondary">Save For Later</button>
+                <div id="selectedQuestionCount" class="question-selection-summary">0 question(s) selected</div>
                 <button id="nextQuestionPaperButton" type="submit" class="btn btn-primary" th:formaction="@{/question-paper-form/next}">Next</button>
             </div>
 
@@ -68,15 +81,8 @@
                                    type="checkbox"
                                    aria-label="Select all questions">
                         </th>
-                        <th scope="col">
-                            <input id="questionPaperName"
-                                   name="paperName"
-                                   class="form-control question-paper-name-input"
-                                   type="text"
-                                   placeholder="Enter paper name"
-                                   th:value="${questionPaperForm.paperName}"
-                                   aria-label="Enter paper name">
-                        </th>
+                        <th scope="col">Question</th>
+                        <th scope="col" class="question-tags-column">Tags</th>
                     </tr>
                     </thead>
                     <tbody id="questionSearchResultsBody"></tbody>

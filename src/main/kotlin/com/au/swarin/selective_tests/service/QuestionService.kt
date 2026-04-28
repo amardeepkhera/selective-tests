@@ -1,21 +1,22 @@
 package com.au.swarin.selective_tests.service
 
+import com.au.swarin.selective_tests.nowAtUTCAndTruncatedToMins
 import com.au.swarin.selective_tests.repository.Images
 import com.au.swarin.selective_tests.repository.Options
 import com.au.swarin.selective_tests.repository.Question
 import com.au.swarin.selective_tests.repository.QuestionRepository
 import com.au.swarin.selective_tests.repository.TagRepository
 import com.au.swarin.selective_tests.web.model.QuestionListItem
+import com.au.swarin.selective_tests.web.model.QuestionPaperReview
 import com.au.swarin.selective_tests.web.model.QuestionSearchPage
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.springframework.dao.DataIntegrityViolationException
+import com.fasterxml.jackson.module.kotlin.treeToValue
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
-import java.time.ZoneOffset.UTC
 import java.util.UUID
 
 @Service
@@ -23,6 +24,7 @@ class QuestionService(
     private val questionRepository: QuestionRepository,
     private val tagRepository: TagRepository,
     private val objectMapper: ObjectMapper,
+    private val tagHelper: TagHelper,
 ) {
     fun getAllQuestions(): List<QuestionListItem> {
 
@@ -35,6 +37,42 @@ class QuestionService(
                 answer = question.answer,
                 createdAt = question.createdAt,
             )
+        }
+    }
+
+    fun getQuestionsByIds(questionIds: Set<UUID>): List<QuestionListItem> {
+        if (questionIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val requestedIds = questionIds.toSet()
+        val questionsById = questionRepository.findAllById(requestedIds)
+            .associateBy { it.id }
+
+        val uniqueTagIds = questionsById.values
+            .mapNotNull { it.tags }
+            .flatMap { objectMapper.treeToValue<Set<UUID>>(it) }
+
+        val tagsMap = tagRepository.findAllById(uniqueTagIds)
+            .associateBy { it.id!! }
+
+
+        return questionIds.mapNotNull { questionId ->
+            questionsById[questionId]?.let { question ->
+                QuestionListItem(
+                    id = question.id,
+                    text = question.text,
+                    images = question.images,
+                    options = question.options,
+                    answer = question.answer,
+                    tags = question.tags?.let {
+                        objectMapper.treeToValue<Set<UUID>>(it)
+                            .map { tagsMap.getValue(it) }
+                            .toSet()
+                    } ?: emptySet(),
+                    createdAt = question.createdAt,
+                )
+            }
         }
     }
 
@@ -51,12 +89,31 @@ class QuestionService(
         )
 
         val hasMore = questions.size > safeSize
+        val uniqueTagIds = mutableSetOf<UUID>()
+
+        val questionIdToTagIdsMap = questions
+            .take(safeSize)
+            .filter { it.tags != null }
+            .associate {
+                uniqueTagIds.addAll(objectMapper.treeToValue<Set<UUID>>(it.tags!!))
+                it.id to objectMapper.treeToValue<Set<UUID>>(it.tags)
+            }
+
+        val tagsMap = tagRepository.findAllById(uniqueTagIds)
+            .associateBy { it.id!! }
+
+
         val visibleQuestions = questions
             .take(safeSize)
             .map { question ->
                 QuestionListItem(
                     id = question.id,
                     text = question.text,
+                    tags = question.tags?.let {
+                        questionIdToTagIdsMap.getValue(question.id!!)
+                            .map { tagsMap.getValue(it) }
+                            .toSet()
+                    } ?: emptySet()
                 )
             }
 
@@ -73,6 +130,10 @@ class QuestionService(
     fun getAvailableTags(): List<Tag> = tagRepository.findAllByEntity("question")
         .map { Tag(id = it.id!!, key = it.key, value = it.value) }
 
+    fun getAvailableTags(questionIds: Set<UUID>): Set<Tag> = questionRepository.getTags(questionIds)
+        .run { tagRepository.findAllById(this) }.map { Tag(id = it.id!!, key = it.key, value = it.value) }
+        .toSet()
+
     @Transactional
     fun createQuestion(request: QuestionCreationRequest): Question {
         val text = request.text.trim()
@@ -82,10 +143,7 @@ class QuestionService(
 
         val images = parseImages(request.imagesJson)
         val options = parseOptions(request.optionsJson)
-        val tags = parseTags(request.tagsJson)
-
-        require(options.options.isNotEmpty()) { "At least one option is required." }
-        require(options.options.any { it.label == answer }) { "Answer must match one of the option labels." }
+        val allTags = tagHelper.saveQuestionTags(request.tagsJson)
 
         return questionRepository.save(
             Question(
@@ -93,8 +151,8 @@ class QuestionService(
                 images = images,
                 options = options,
                 answer = answer,
-                tags = tags,
-                createdAt = LocalDateTime.now(UTC),
+                tags = objectMapper.convertValue<JsonNode>(allTags),
+                createdAt = nowAtUTCAndTruncatedToMins(),
             ),
         )
     }
@@ -118,69 +176,6 @@ class QuestionService(
             objectMapper.readValue(trimmed)
         } catch (_: JsonProcessingException) {
             throw IllegalArgumentException("Options JSON is invalid.")
-        }
-    }
-
-    private fun parseTags(tagsJson: String): JsonNode? {
-        val trimmed = tagsJson.trim()
-        if (trimmed.isBlank()) {
-            return null
-        }
-
-        return try {
-            val parsed = objectMapper.readTree(trimmed)
-            require(parsed.isArray) { "Tags JSON must be an array." }
-            resolveTags(parsed)
-        } catch (_: JsonProcessingException) {
-            throw IllegalArgumentException("Tags JSON is invalid.")
-        }
-    }
-
-    private fun resolveTags(parsed: JsonNode): JsonNode? {
-        val resolvedTags = objectMapper.createArrayNode()
-
-        parsed.forEach { entry ->
-            when {
-                entry.isTextual -> resolvedTags.add(resolveExistingTag(entry.asText()).toString())
-                entry.isObject -> resolvedTags.add(resolveSubmittedTag(entry).toString())
-                else -> throw IllegalArgumentException("Tags JSON contains an invalid tag entry.")
-            }
-        }
-
-        return resolvedTags.takeIf { it.size() > 0 }
-    }
-
-    private fun resolveExistingTag(tagId: String): UUID {
-        val parsedId = try {
-            UUID.fromString(tagId)
-        } catch (_: IllegalArgumentException) {
-            throw IllegalArgumentException("Tags JSON contains an invalid tag id.")
-        }
-
-        val tag = tagRepository.findById(parsedId).orElseThrow {
-            IllegalArgumentException("Tag does not exist.")
-        }
-        require(tag.entity == "question") { "Tag does not belong to questions." }
-        return parsedId
-    }
-
-    private fun resolveSubmittedTag(entry: JsonNode): UUID {
-        val key = entry.path("key").asText("").trim()
-        val value = entry.path("value").asText("").trim()
-        require(key.isNotBlank() && value.isNotBlank()) { "New tags must include key and value." }
-
-        return try {
-            tagRepository.save(
-                com.au.swarin.selective_tests.repository.Tag(
-                    entity = "question",
-                    key = key,
-                    value = value,
-                    createdAt = LocalDateTime.now(UTC),
-                ),
-            ).id ?: throw IllegalStateException("Saved tag id is missing.")
-        } catch (_: DataIntegrityViolationException) {
-            tagRepository.findByEntityAndKeyAndValue("question", key, value)?.id
-                ?: throw IllegalStateException("Existing tag was not found after save conflict.")
         }
     }
 }

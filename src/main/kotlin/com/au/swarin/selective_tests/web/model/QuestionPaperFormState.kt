@@ -4,5 +4,7 @@ import java.util.UUID
 
 data class QuestionPaperFormState(
     var paperName: String = "",
-    val selectedQuestionIds: MutableList<UUID> = mutableListOf(),
+    var tagsJson: String = "",
+    val selectedQuestionIds: MutableSet<UUID> = mutableSetOf(),
+    var questionPaperId: UUID? = null,
 )

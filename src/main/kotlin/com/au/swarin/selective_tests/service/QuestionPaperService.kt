@@ -1,53 +1,152 @@
 package com.au.swarin.selective_tests.service
 
+import com.au.swarin.selective_tests.nowAtUTCAndTruncatedToMins
 import com.au.swarin.selective_tests.repository.Paper
 import com.au.swarin.selective_tests.repository.PaperQuestion
 import com.au.swarin.selective_tests.repository.QuestionPaper
 import com.au.swarin.selective_tests.repository.QuestionPaperRepository
 import com.au.swarin.selective_tests.repository.QuestionRepository
 import com.au.swarin.selective_tests.repository.TagRepository
+import com.au.swarin.selective_tests.web.model.QuestionListItem
 import com.au.swarin.selective_tests.web.model.QuestionPaperListItem
-import com.fasterxml.jackson.core.JsonProcessingException
+import com.au.swarin.selective_tests.web.model.QuestionPaperReview
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.springframework.dao.DataIntegrityViolationException
+import com.fasterxml.jackson.module.kotlin.convertValue
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.time.ZoneOffset.UTC
 import java.util.UUID
+import kotlin.collections.get
+import kotlin.collections.map
 
-private const val QUESTION_PAPER_TAG_ENTITY = "question_paper"
 
 @Service
 class QuestionPaperService(
-    private val questionPaperRepository: QuestionPaperRepository,
     private val questionRepository: QuestionRepository,
+    private val questionPaperRepository: QuestionPaperRepository,
     private val tagRepository: TagRepository,
     private val objectMapper: ObjectMapper,
+    private val tagHelper: TagHelper
 ) {
     fun getAllQuestionPapers(): List<QuestionPaperListItem> =
         questionPaperRepository.findAll().map { questionPaper ->
             QuestionPaperListItem(
                 id = questionPaper.id,
                 paper = questionPaper.paper,
+                status = questionPaper.status,
                 tags = questionPaper.tags,
                 createdAt = questionPaper.createdAt,
             )
         }
 
-    fun getAvailableTags(): List<Tag> = tagRepository.findAllByEntity(QUESTION_PAPER_TAG_ENTITY)
+    fun getQuestionPaperById(questionPaperId: UUID): QuestionPaper? =
+        questionPaperRepository.findById(questionPaperId).orElse(null)
+
+    fun getAvailableTags(): List<Tag> = tagRepository.findAllByEntity("question_paper")
         .map { Tag(id = it.id!!, key = it.key, value = it.value) }
 
+    fun getReviewTagLabels(tagsJson: String): List<String> {
+        val trimmed = tagsJson.trim()
+        if (trimmed.isBlank()) {
+            return emptyList()
+        }
+
+        val parsed = objectMapper.readTree(trimmed)
+        if (!parsed.isArray) {
+            return emptyList()
+        }
+
+        return parsed.mapNotNull {
+            it.path("key").asText("").trim() + ":" + it.path("value").asText("").trim()
+        }
+    }
+
     @Transactional
-    fun saveAsDraft(createQuestionPaperRequest: CreateQuestionPaperRequest) {
+    fun saveAsDraft(createQuestionPaperRequest: CreateQuestionPaperRequest): QuestionPaper {
         val paper = with(createQuestionPaperRequest) {
             Paper(
                 name = name,
-                questions = questions.map { PaperQuestion(questionId = it) }
+                questions = questions.mapIndexed { index, id -> PaperQuestion(questionNo = index, questionId = id) }
             )
         }
-        val questionPaper = QuestionPaper(paper = paper, status = "DRAFT", createdAt = LocalDateTime.now(UTC))
-        questionPaperRepository.save(questionPaper)
+        val questionPaper =
+            QuestionPaper(paper = paper, status = "DRAFT", createdAt = nowAtUTCAndTruncatedToMins())
+        return questionPaperRepository.save(questionPaper)!!
     }
+
+    @Transactional
+    fun saveAsFinal(questionPaperId: UUID) {
+        questionPaperRepository.updateStatus(questionPaperId, "FINAL")
+    }
+
+    @Transactional
+    fun saveTags(questionPaperId: UUID, tagsJson: String) {
+        val allTagIds = tagHelper.saveQuestionPaperTags(tagsJson)
+
+        objectMapper.convertValue(allTagIds, JsonNode::class.java).run {
+            questionPaperRepository.addTags(questionPaperId, this)
+        }
+    }
+
+    fun getQuestionPaper(questionPaperId: UUID): QuestionPaperReview {
+        val questionPaper = questionPaperRepository.findById(questionPaperId).orElseThrow()
+
+        val questionIdToQuestion = questionPaper.paper.questions.associateBy { it.questionId }
+
+        val questions = questionRepository.findAllById(questionIdToQuestion.keys)
+
+        val questionIdToTag = questions.associate { it.id!! to objectMapper.convertValue<Set<UUID>>(it.tags) }
+
+        val tagIdToTag = tagRepository.findAllById(questionIdToTag.values.toSet().flatten())
+            .associateBy { it.id!! }
+
+        val questionsList = questions
+            .map { question ->
+                QuestionListItem(
+                    id = question.id,
+                    questionNo = questionIdToQuestion[question.id]?.questionNo,
+                    text = question.text,
+                    tags = questionIdToTag[question.id]?.let { tags ->
+                        tags.map { tagIdToTag.getValue(it) }.toSet()
+                    } ?: emptySet(),
+                    createdAt = question.createdAt,
+                )
+
+            }.sortedBy { it.questionNo }
+
+        return QuestionPaperReview(
+            questions = questionsList,
+            uniqueTags = tagIdToTag.values.map { "${it.key}:${it.value}" }.toSet()
+        )
+    }
+
+
+
+//    fun getQuestionPaperReview(questionIds: Set<UUID>): QuestionPaperReview {
+//
+//        val questions = questionRepository.findAllById(questionIds)
+//
+//        val questionIdToTag = questions.associate { it.id!! to objectMapper.convertValue<Set<UUID>>(it.tags) }
+//
+//        val tagIdToTag = tagRepository.findAllById(questionIdToTag.values.toSet().flatten())
+//            .associateBy { it.id!! }
+//
+//        val questionsList = questions
+//            .map { question ->
+//                QuestionListItem(
+//                    id = question.id,
+//                    text = question.text,
+//                    tags = questionIdToTag[question.id]?.let { tags ->
+//                        tags.map { tagIdToTag.getValue(it) }.toSet()
+//                    } ?: emptySet(),
+//                    createdAt = question.createdAt,
+//                )
+//
+//            }
+//        return QuestionPaperReview(
+//            questions = questionsList,
+//            uniqueTags = tagIdToTag.values.map { "${it.key}:${it.value}" }.toSet()
+//        )
+//    }
 }

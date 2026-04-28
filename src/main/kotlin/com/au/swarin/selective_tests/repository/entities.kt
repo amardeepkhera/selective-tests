@@ -105,3 +105,4 @@ data class Images(val images: List<Image>)
 
 data class Option(val label: String, val text: String? = null, val image: Images? = null)
 data class Options(val options: List<Option>)
+
