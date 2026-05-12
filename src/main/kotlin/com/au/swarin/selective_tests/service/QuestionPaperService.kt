@@ -15,10 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import java.util.UUID
-import kotlin.collections.get
-import kotlin.collections.map
 
 
 @Service
@@ -120,33 +117,4 @@ class QuestionPaperService(
             uniqueTags = tagIdToTag.values.map { "${it.key}:${it.value}" }.toSet()
         )
     }
-
-
-
-//    fun getQuestionPaperReview(questionIds: Set<UUID>): QuestionPaperReview {
-//
-//        val questions = questionRepository.findAllById(questionIds)
-//
-//        val questionIdToTag = questions.associate { it.id!! to objectMapper.convertValue<Set<UUID>>(it.tags) }
-//
-//        val tagIdToTag = tagRepository.findAllById(questionIdToTag.values.toSet().flatten())
-//            .associateBy { it.id!! }
-//
-//        val questionsList = questions
-//            .map { question ->
-//                QuestionListItem(
-//                    id = question.id,
-//                    text = question.text,
-//                    tags = questionIdToTag[question.id]?.let { tags ->
-//                        tags.map { tagIdToTag.getValue(it) }.toSet()
-//                    } ?: emptySet(),
-//                    createdAt = question.createdAt,
-//                )
-//
-//            }
-//        return QuestionPaperReview(
-//            questions = questionsList,
-//            uniqueTags = tagIdToTag.values.map { "${it.key}:${it.value}" }.toSet()
-//        )
-//    }
 }
