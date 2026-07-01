@@ -7,9 +7,9 @@ import com.au.swarin.selective_tests.repository.QuestionPaper
 import com.au.swarin.selective_tests.repository.QuestionPaperRepository
 import com.au.swarin.selective_tests.repository.QuestionRepository
 import com.au.swarin.selective_tests.repository.TagRepository
+import com.au.swarin.selective_tests.web.model.DetailedQuestionPaper
 import com.au.swarin.selective_tests.web.model.QuestionListItem
 import com.au.swarin.selective_tests.web.model.QuestionPaperListItem
-import com.au.swarin.selective_tests.web.model.QuestionPaperReview
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.convertValue
@@ -43,22 +43,6 @@ class QuestionPaperService(
     fun getAvailableTags(): List<Tag> = tagRepository.findAllByEntity("question_paper")
         .map { Tag(id = it.id!!, key = it.key, value = it.value) }
 
-    fun getReviewTagLabels(tagsJson: String): List<String> {
-        val trimmed = tagsJson.trim()
-        if (trimmed.isBlank()) {
-            return emptyList()
-        }
-
-        val parsed = objectMapper.readTree(trimmed)
-        if (!parsed.isArray) {
-            return emptyList()
-        }
-
-        return parsed.mapNotNull {
-            it.path("key").asText("").trim() + ":" + it.path("value").asText("").trim()
-        }
-    }
-
     @Transactional
     fun saveAsDraft(createQuestionPaperRequest: CreateQuestionPaperRequest): QuestionPaper {
         val paper = with(createQuestionPaperRequest) {
@@ -86,7 +70,26 @@ class QuestionPaperService(
         }
     }
 
-    fun getQuestionPaper(questionPaperId: UUID): QuestionPaperReview {
+    fun getQuestionPaperWithoutTags(questionPaperId: UUID): DetailedQuestionPaper {
+        val questionPaper = questionPaperRepository.findById(questionPaperId).orElseThrow()
+
+        val questionIdToQuestion = questionPaper.paper.questions.associateBy { it.questionId }
+
+        return questionRepository.findAllById(questionIdToQuestion.keys)
+            .map { question ->
+                QuestionListItem(
+                    id = question.id,
+                    questionNo = questionIdToQuestion[question.id]?.questionNo,
+                    text = question.text,
+                )
+            }.sortedBy { it.questionNo }
+            .run { DetailedQuestionPaper(
+                name = questionPaper.paper.name,
+                questions = this, uniqueTags = emptySet(), isFinal = questionPaper.isFinal()) }
+
+    }
+
+    fun getQuestionPaper(questionPaperId: UUID): DetailedQuestionPaper {
         val questionPaper = questionPaperRepository.findById(questionPaperId).orElseThrow()
 
         val questionIdToQuestion = questionPaper.paper.questions.associateBy { it.questionId }
@@ -112,9 +115,11 @@ class QuestionPaperService(
 
             }.sortedBy { it.questionNo }
 
-        return QuestionPaperReview(
+        return DetailedQuestionPaper(
+            name = questionPaper.paper.name,
             questions = questionsList,
-            uniqueTags = tagIdToTag.values.map { "${it.key}:${it.value}" }.toSet()
+            uniqueTags = tagIdToTag.values.map { "${it.key}:${it.value}" }.toSet(),
+            isFinal = questionPaper.isFinal()
         )
     }
 }

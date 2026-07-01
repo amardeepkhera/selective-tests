@@ -43,12 +43,12 @@ class QuestionPaperController(
         @PathVariable questionPaperId: UUID,
         model: Model,
     ): String {
-        val questionPaper = questionPaperService.getQuestionPaperById(questionPaperId)
-        if (questionPaper == null) {
-            model.addAttribute("errorMessage", "Question paper not found.")
-        } else {
-            model.addAttribute("questionPaper", questionPaper)
-        }
+
+        val questionPaper = questionPaperService.getQuestionPaperWithoutTags(questionPaperId)
+        model.addAttribute("questionPaper", questionPaper)
+        model.addAttribute("questionPaperId", questionPaperId)
+        model.addAttribute("showCreateTestButton", questionPaper.isFinal)
+
         return "question-paper-details"
     }
 
@@ -60,7 +60,7 @@ class QuestionPaperController(
     }
 
     @GetMapping("/question-paper-form")
-    fun questionPaperForm(
+    fun handleBackNavigationQuestionPaperForm(
         @SessionAttribute(QUESTION_PAPER_FORM_SESSION) questionPaperFormState: QuestionPaperFormState,
         model: Model,
     ): String = renderQuestionPaperForm(model, questionPaperFormState)

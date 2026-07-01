@@ -7,7 +7,6 @@ import com.au.swarin.selective_tests.repository.Question
 import com.au.swarin.selective_tests.repository.QuestionRepository
 import com.au.swarin.selective_tests.repository.TagRepository
 import com.au.swarin.selective_tests.web.model.QuestionListItem
-import com.au.swarin.selective_tests.web.model.QuestionPaperReview
 import com.au.swarin.selective_tests.web.model.QuestionSearchPage
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonNode

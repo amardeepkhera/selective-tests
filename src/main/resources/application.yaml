@@ -14,3 +14,8 @@ spring:
     jdbc:
       initialize-schema: never
       table-name: selective.spring_session
+  docker:
+    compose:
+      enabled: true
+      file:
+        - classpath:docker-compose.yml

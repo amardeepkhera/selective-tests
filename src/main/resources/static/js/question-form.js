@@ -13,6 +13,7 @@
     const tagSuggestions = document.getElementById("tagSuggestions");
     const tagsJsonField = document.getElementById("tagsJson");
     const initialHtml = holder?.dataset.initialHtml ?? "";
+    const listTool = window.EditorjsList || window.List;
 
     if (!holder || !textarea || !form || !validationMessage || !optionsContainer || !addOptionButton || !optionsJsonField || !optionsValidationMessage || !tagAutocomplete || !tagSearchInput || !selectedTagsContainer || !tagSuggestions || !tagsJsonField || typeof EditorJS === "undefined") {
         return;
@@ -55,6 +56,29 @@
         .replaceAll("\"", "&quot;")
         .replaceAll("'", "&#39;");
 
+    const renderListItems = (items) => items
+        .map((item) => {
+            if (typeof item === "string") {
+                return `<li>${item}</li>`;
+            }
+
+            if (item && typeof item === "object") {
+                const content = item.content ?? "";
+                const nestedItems = Array.isArray(item.items) && item.items.length > 0
+                    ? renderList(item.meta?.style ?? "unordered", item.items)
+                    : "";
+                return `<li>${content}${nestedItems}</li>`;
+            }
+
+            return "";
+        })
+        .join("");
+
+    const renderList = (style, items) => {
+        const tag = style === "ordered" ? "ol" : "ul";
+        return `<${tag}>${renderListItems(items)}</${tag}>`;
+    };
+
     const renderBlock = (block) => {
         if (block.type === "paragraph") {
             return `<p>${block.data?.text ?? ""}</p>`;
@@ -67,23 +91,35 @@
         }
 
         if (block.type === "list") {
-            const tag = block.data?.style === "ordered" ? "ol" : "ul";
             const items = Array.isArray(block.data?.items) ? block.data.items : [];
-            const content = items.map((item) => `<li>${item}</li>`).join("");
-            return `<${tag}>${content}</${tag}>`;
+            return renderList(block.data?.style, items);
         }
 
         return `<p>${escapeHtml(JSON.stringify(block.data ?? {}))}</p>`;
     };
 
-    const editor = new EditorJS({
+    const editorConfig = {
         holder: "textEditor",
         minHeight: 160,
         autofocus: true,
         placeholder: "Write the question text here",
         inlineToolbar: ["bold", "italic", "link"],
         data: buildInitialData(initialHtml),
-    });
+    };
+
+    if (listTool) {
+        editorConfig.tools = {
+            list: {
+                class: listTool,
+                inlineToolbar: true,
+                config: {
+                    defaultStyle: "unordered",
+                },
+            },
+        };
+    }
+
+    const editor = new EditorJS(editorConfig);
 
     const syncEditorValue = async () => {
         const output = await editor.save();

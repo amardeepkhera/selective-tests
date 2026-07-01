@@ -33,7 +33,9 @@ data class QuestionPaper(
     val status: String,
     @Column("created_at")
     val createdAt: LocalDateTime,
-)
+) {
+    fun isFinal(): Boolean = status == "FINAL"
+}
 
 data class Paper(
     val name: String,
@@ -45,16 +47,50 @@ data class PaperQuestion(
     val questionId: UUID,
 )
 
+@Table("subject")
+data class Subject(
+    @Id
+    val id: UUID? = null,
+    val name: String,
+    @Column("created_at")
+    val createdAt: LocalDateTime,
+)
+
 @Table("test")
 data class Test(
     @Id
+    val id: UUID? = null,
+    val name: String,
+    @Column("subject_id")
+    val subjectId: UUID,
+    @Column("duration_mins")
+    val durationMins: Int,
+    val instructions: String?,
+    @Column("question_paper_id")
+    val questionPaperId: UUID,
+    @Column("created_at")
+    val createdAt: LocalDateTime,
+)
+
+data class TestListItem(
     val id: UUID,
+    val name: String,
+    val subject: String,
+    @Column("duration_mins")
+    val durationMins: Int,
+)
+
+data class TestDetails(
+    val id: UUID,
+    val name: String,
     val subject: String,
     @Column("duration_mins")
     val durationMins: Int,
     val instructions: String?,
     @Column("question_paper_id")
     val questionPaperId: UUID,
+    @Column("question_paper_name")
+    val questionPaperName: String,
     @Column("created_at")
     val createdAt: LocalDateTime,
 )
@@ -105,4 +141,3 @@ data class Images(val images: List<Image>)
 
 data class Option(val label: String, val text: String? = null, val image: Images? = null)
 data class Options(val options: List<Option>)
-

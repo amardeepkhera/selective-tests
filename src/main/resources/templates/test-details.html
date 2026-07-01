@@ -15,23 +15,26 @@
     <div class="alert alert-warning" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
     <section class="surface-card p-3 p-md-4" th:if="${test}">
-        <h1 class="h3 page-title mb-3" th:text="${test.subject}">Subject</h1>
 
         <dl class="row mb-0">
-            <dt class="col-sm-4 detail-key">Test ID</dt>
-            <dd class="col-sm-8 text-break" th:text="${test.id}"></dd>
+            <dt class="col-sm-4 detail-key">Test Name</dt>
+            <dd class="col-sm-8 text-break" th:text="${test.name}"></dd>
+
+            <dt class="col-sm-4 detail-key">Subject</dt>
+            <dd class="col-sm-8" th:text="${test.subject}"></dd>
 
             <dt class="col-sm-4 detail-key">Duration</dt>
             <dd class="col-sm-8"><span th:text="${test.durationMins}"></span> minutes</dd>
 
             <dt class="col-sm-4 detail-key">Instructions</dt>
-            <dd class="col-sm-8" th:text="${test.instructions ?: 'N/A'}"></dd>
+            <dd class="col-sm-8" th:if="${#strings.isEmpty(test.instructions)}">N/A</dd>
+            <dd class="col-sm-8" th:if="${!#strings.isEmpty(test.instructions)}" th:utext="${test.instructions}"></dd>
 
-            <dt class="col-sm-4 detail-key">Question Paper ID</dt>
-            <dd class="col-sm-8 text-break" th:text="${test.questionPaperId}"></dd>
-
-            <dt class="col-sm-4 detail-key">Created At</dt>
-            <dd class="col-sm-8" th:text="${test.createdAt}"></dd>
+            <dt class="col-sm-4 detail-key">Question Paper</dt>
+            <dd class="col-sm-8 text-break">
+                <a th:href="@{/question-papers/{questionPaperId}(questionPaperId=${test.questionPaperId})}"
+                   th:text="${test.questionPaperName}">Question Paper</a>
+            </dd>
         </dl>
 
         <form class="mt-3" th:action="@{/tests/{testId}(testId=${test.id})}" method="post">
